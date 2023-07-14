@@ -1,5 +1,9 @@
 # iRedMail installation & configuration
 
+🚨 La configuration ci-dessous permet de faire fonctionner `iRedMail` sur le **réseau local** *uniquement*
+
+# Instalation
+
 ## Remarques
 
 les FAI bloquent par défaut le port 25 (utilisé pour la communication entre les serveurs de messagerie)
@@ -43,13 +47,14 @@ Remplacer la ligne écrite par l'hyperviseur (VMWare, Proxmox, ...)
 ```
 iface ens18 inet dhcp
 ```
-par ce qui suit, en vérifiant que cette configuration match avec le réseau délivré par l'hyperviseur.
+par ce qui suit, en vérifiant que cette configuration match avec le réseau délivré par l'hyperviseur (l'IP ne doit pas être dans la plage du DHCP)
 ```
 iface ens18 inet static
-	address 10.10.200.221
+	address 10.10.200.231
 	netmask 255.255.255.0
 	gateway 10.10.200.254
 ```
+Vérifier dans `/etc/resolv.conf`, que le nameserver correspond au gateway du réseau
 > 
 > ❌ Redémarrer le service réseau ne semblant pas fonctionner
 > ```sh
@@ -59,6 +64,7 @@ iface ens18 inet static
 > ```sh
 > reboot
 > ```
+>
 
 
 ## 3. Adapter le hostname
@@ -70,14 +76,14 @@ hostname -f
 ```
 
 Ensuite, editer le fichier `/etc/hosts` :
-- commenter la ligne contenant `127.0.1.1`
-- vérifier que la ligne `127.0.0.1` corresponde au schéma suivant :
+- commenter la ligne contenant `127.0.0.1`
+- vérifier que la ligne `127.0.1.1` corresponde au schéma suivant :
 ```
-[adresse ip locale] [hostname -f : nom de dommaine] [nom de la machine] localhost localhost.localdomain
+[adresse ip locale] [hostname -f : nom de dommaine] [sous domaine : nom de la machine] localhost localhost.localdomain
 ```
 suivant la **`machine`** et le **`domaine`** précédent :
 ```
-127.0.0.1 mail.homux.me mail localhost localhost.localdomain
+127.0.1.1 mail.homux.me mail localhost localhost.localdomain
 ```
 
 
@@ -247,21 +253,140 @@ Suivre les écrans et les instructions.
 
 
 ## 6. Redémarrage des services
+Avant de redémarrer, on sauvegarde la configuration
+```sh
+mv /root/iRedMail/config /root/iRedMail/config.bak
+```
+Pour sécuriser le fichier de configuration
+```sh
+gpg -c /root/iRedMail/config
+```
+enfin, on reboot
 ```sh
 reboot
 ```
 
-## Commandes utiles
+## 7. Paramétrage DNS
+### Paramétrer le DNS
+- Supprimer les comptes POP et SMTP déjà présents.
+- Supprimer tous les registres mx, pop ou smtp
+- 
+### Zone DNS
 
-### Parcourir les logs de Nginx
+- Champ `MX` a créer dans le gestionnaire de nom de domaine :
+	```
+	MX mail.homux.me
+	```
+
+- Champs `A` a créer dans le gestionnaire de nom de domaine :
+	```
+	A mail.homux.me [adresse ip public]
+	A pop.homux.me [adresse ip public]
+	A smtp.homux.me [adresse ip public]
+	```
+
+
+
+# Configuration
+## Roundcube webmail
+Roundcube est un client mail simple
+
+**Accès** : https://mail.homux.me/mail/
+
+## SOGo groupware
+SOgo est un client mail complet, contenant calendriers, ...
+
+**Accès** : https://mail.homux.me/SOGo/
+
+## netdata (monitor)
+System de monitoring
+
+**Accès** : https://mail.homux.me/netdata/
+
+## Web admin panel (iRedAdmin)
+Panneau d'administration de `iRedMail`
+
+**Accès** : https://mail.homux.me/iredadmin/
+
+# Commandes utiles
+
+## Postfix
+### Afficher la liste des mails en attente d'envoi
+Lister les messages en cours d'envoi
 ```sh
-cd /var/log/nginx/
+mailq
 ```
+Lister les messages différés
 ```sh
-cat access.log
-tail -f access.log
+postqueue -p
+```
+
+### Envoyer les messages
+```sh
+postqueue -f
+postfix flush
+```
+### Supprimer les messages
+Pour supprimer les messages de la queue :
+```sh
+postsuper -d ALL
+```
+Pour supprimer tous les messages dans la queue des emails différés :
+```sh
+postsuper -d ALL deferred
+```
+
+## Debugguer postfix
+```sh
+# /etc/postfix.main.cf
+
+# Ajouter la ligne suivante 
+debug_peer_list = 10.10.200.231
+```
+
+Puis relancer postfix
+```sh
+postfix reload
+```
+
+### Script - balayage de la pile d'emails
+```sh
+#!/bin/bash
+lid=""
+
+while [ 1 = 1 ]; do
+	res=`mailq | head -n 2 | tail -n 1`
+	check=`echo $res | grep "Mail queue is empty"`
+	if [ "e$check" == "e" ]; then
+		id=`echo $res | cut -d' ' -f1`
+		if [ "$lid" != "$id" ]; then
+			postcat -q -beh $id
+			lid=$id
+		fi
+	fi
+done
+```
+
+## Parcourir les logs de Nginx
+```sh
+tail -f /var/log/nginx/access.log
+
+tail -f /var/log/nginx/error.log
 ```
 filtrer
 ```sh
-cat access.log | grep " 200 "
+cat /var/log/nginx/access.log | grep " 200 "
 ```
+
+## Vérifier les ports ouverts
+```sh
+nc -zvw3 10.10.200.231 25
+telnet 10.10.200.231 25
+nmap 10.10.200.231 -p 25
+```
+
+
+
+
+## MEMO
+test@homux.me / AjsFQ5T3X}

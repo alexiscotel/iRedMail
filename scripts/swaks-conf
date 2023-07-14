@@ -1,0 +1,360 @@
+#!/bin/bash
+
+## TODO: send --slient & --verbose to subscripts
+
+############
+## COLORS ##
+############
+nocolor='\033[0m'
+whiite='\033[0;97m'
+whiitebold='\033[0;1;97m'
+purple='\033[0;38;5;201m'
+blue='\033[0;38;5;45m'
+blueblink='\033[0;5;38;5;45m'
+darkblue='\033[0;38;5;27m'
+green='\033[0;32m'
+greendim='\033[0;3;32m'
+yellow='\033[0;38;5;178m'
+orange='\e[0;1;38;5;166;3m'
+orangeital='\e[0;3;38;5;166m'
+gray='\033[0;38;5;249m'
+graybold='\033[0;1;38;5;249m'
+graydim='\033[0;2;38;5;250m'
+red='\033[0;91m'
+## CUSTOM
+# c__fctName='\033[0;38;5;45m'
+c__fctName=$whiitebold
+c__fctAction=$graydim
+c__fct2=$gray
+c__msgVar=$graybold
+c__value=$blue
+c__value2=$purple
+c__error=$red
+c__warning=$orange
+c__notice=$yellow
+c__success=$green
+
+###############
+## PARAMETERS
+###############
+commandPath=$0
+commandName=`basename "$commandPath"`
+declare -a g_errors=()
+declare -a g_warnings=()
+declare -a g_notices=()
+
+smtp_port=""
+smtp_ip=""
+smtp_name=""
+username=""
+password=""
+verbose=false
+silent=false
+
+
+###############
+## CHECK ROOT
+###############
+# if [ "$EUID" -ne 0 ]; then
+# 	printf "${c__error}Please run this script as root.${nocolor}\n"
+# 	exit 1
+# fi
+
+## CHECKERS FUNCTIONS
+CheckIfParameters() {
+	if [ -z "$smtp_port" ] && [ -z "$smtp_ip" ] && [ -z "$smtp_name" ] && [ -z "$username" ] && [ -z "$password" ]; then
+		printf "${c__error}No parameters provided.${nocolor}\n"
+		return 1
+	else
+		return 0
+	fi
+}
+CheckMandatoryParams() {
+	local isError=false
+	if [ $verbose == true ] && [ $silent == false ]; then
+		printf "${c__fctName}Checking mandatory parameters ...${nocolor}\n"
+	fi
+	
+
+	# check smtp_port parameter
+	if [ $verbose == true ] && [ $silent == false ]; then
+		printf "${c__fctAction}Checking for smtp port parameter ...${nocolor}\n"
+	fi
+
+	if [[ -z $smtp_port ]]; then
+		# printf "${c__error}parameter ${c__msgVar}--smtp-port${c__error} is mandatory.${nocolor}\n"
+		mand_errors+=("${c__error}parameter ${c__msgVar}--smtp-port${c__error} is mandatory.${nocolor}")
+		isError=true
+	else
+		if [ $verbose == true ] && [ $silent == false ]; then
+			printf "    ${c__fct2}smtp port : ${c__value}${smtp_port}${nocolor}\n"
+		fi
+	fi
+
+
+	# check smtp_ip parameter
+	if [ $verbose == true ] && [ $silent == false ]; then
+		printf "${c__fctAction}Checking for mail server IP parameter ...${nocolor}\n"
+	fi
+
+	if [[ -z $smtp_ip ]]; then
+		# printf "${c__error}parameter ${c__msgVar}--smtp-ip${c__error} is mandatory.${nocolor}\n"
+		mand_errors+=("${c__error}parameter ${c__msgVar}--smtp-ip${c__error} is mandatory.${nocolor}")
+		isError=true
+	else
+		if [ $verbose == true ] && [ $silent == false ]; then
+			printf "    ${c__fct2}smtp server IP : ${c__value}${smtp_ip}${nocolor}\n"
+		fi
+	fi
+
+	
+	# check smtp_name parameter
+	if [ $verbose == true ] && [ $silent == false ]; then
+		printf "${c__fctAction}Checking for mail server name parameter ...${nocolor}\n"
+	fi
+
+	if [[ -z $smtp_name ]]; then
+		# printf "${c__error}parameter ${c__msgVar}--smtp-name${c__error} is mandatory.${nocolor}\n"
+		mand_errors+=("${c__error}parameter ${c__msgVar}--smtp-name${c__error} is mandatory.${nocolor}")
+		isError=true
+	else
+		if [ $verbose == true ] && [ $silent == false ]; then
+			printf "    ${c__fct2}smtp server name : ${c__value}${smtp_name}${nocolor}\n"
+		fi
+	fi
+
+
+	# check username parameter
+	if [ $verbose == true ] && [ $silent == false ]; then
+		printf "${c__fctAction}Checking for username parameter ...${nocolor}\n"
+	fi
+
+	if [[ -z $username ]]; then
+		# printf "${c__error}parameter ${c__msgVar}--username${c__error} is mandatory.${nocolor}\n"
+		mand_errors+=("${c__error}parameter ${c__msgVar}--username${c__error} is mandatory.${nocolor}")
+		isError=true
+	else
+		if [ $verbose == true ] && [ $silent == false ]; then
+			printf "    ${c__fct2}username : ${c__value}${username}${nocolor}\n"
+		fi
+	fi
+
+
+	# check password parameter
+	if [ $verbose == true ] && [ $silent == false ]; then
+		printf "${c__fctAction}Checking for password parameter ...${nocolor}\n"
+	fi
+
+	if [[ -z $password ]]; then
+		# printf "${c__error}parameter ${c__msgVar}--password${c__error} is mandatory.${nocolor}\n"
+		mand_errors+=("${c__error}parameter ${c__msgVar}--password${c__error} is mandatory.${nocolor}")
+		isError=true
+	else
+		if [ $verbose == true ] && [ $silent == false ]; then
+			printf "    ${c__fct2}password : ${c__value}${password}${nocolor}\n"
+		fi
+	fi
+
+
+
+	# check if mand_errors contains errors and show them
+	if [ ${#mand_errors[@]} -gt 0 ]; then
+		if [ $verbose == true ] && [ $silent == false ]; then
+			for i in "${mand_errors[@]}"; do
+				printf "${i}\n"
+			done
+		fi
+		return 1
+	else
+		if [ $verbose == true ] && [ $silent == false ]; then
+			printf "${c__success}Mandatory parameters OK${nocolor}
+			\n"
+		fi
+		return 0
+	fi
+}
+
+#####################
+## SCRIPTS FUNCTION
+#####################
+
+InstallDependencies() {
+	apt update && apt upgrade && apt install swaks
+	local test=$?
+	if [ $test -ne 0 ]; then
+		printf "${c__error}The installation of dependencies failed. ${nocolor}"
+		return 1
+	else
+		printf "${c__success}The installation of dependencies is complete${nocolor}\n"
+		return 0
+	fi
+}
+
+ConfigureHosts() {
+	# check if the line is already in the file
+	local line=$(cat /etc/hosts | grep "${smtp_ip} ${smtp_name}")
+	if [ -n "$line" ]; then
+		printf "${c__warning}The line is already in the file${nocolor}\n"
+		return 2
+	fi
+
+	echo "${smtp_ip} ${smtp_name}" >> /etc/hosts
+	local test=$?
+	if [ $test -ne 0 ]; then
+		printf "${c__error}The configuration of hosts file failed. ${nocolor}"
+		return 1
+	else
+		printf "${c__success}The configuration of hosts file is complete${nocolor}\n"
+		return 0
+	fi
+}
+
+CreateConfig() {
+	echo "-s ${smtp_name}:${smtp_port}
+-tls
+-au ${username}
+-ap ${password}
+-f ${username}" > $HOME/.swaksrc
+	local test=$?
+	if [ $test -ne 0 ]; then
+		printf "${c__error}The creation of config file failed. ${nocolor}"
+		return 1
+	else
+		printf "${c__success}The creation of config file is complete${nocolor}\n"
+		return 0
+	fi
+}
+
+######################
+## DISPLAY FUNCTIONS
+######################
+
+StartText () {
+	printf "${blue}$commandName script ${nocolor}\n"
+	printf "\n"
+}
+HowToUse() {
+	printf "❓ ${blue}How to use${gray}\n"
+	printf "\n"
+	printf "${whiitebold}This script is made to configure Swaks to send mail via an iRedMail mail server${nocolor}\n"
+	printf "\n"
+	printf "${commandName} --smtp-port \"587\" --smtp-ip \"10.10.200.231\" --smtp-name \"mail.homux.me\" --username \"postmaster@homux.me\" --password \"password\" --verbose --silent${nocolor}\n"
+	printf "\n"
+	printf "  --smtp-port   : SMTP port to use (25 or 587)\n"
+	printf "  --smtp-ip     : IP of mail server\n"
+	printf "  --smtp-name   : mail server associated domain name\n"
+	printf "  --username   : username (email address) used to send messages\n"
+	printf "  --password   : password used with username\n"
+	printf "\n"
+	printf "  --verbose     : show logs\n"
+	printf "  --silent      : hide logs\n"
+	printf "\n"
+	printf "  -h  --help   : show this message\n"
+	printf "${nocolor}\n"
+}
+
+EndOfScript() {
+	printf "\n"
+	printf "${c__fctName}${commandName}${nocolor} - ${c__fct2}Resume${nocolor}\n"
+	# show error messages if there are
+	if [[ ${#g_errors[@]} -gt 0 ]]; then
+		printf "${c__error}❌ ${#g_errors[@]} error(s)${nocolor}\n"
+		for err in "${g_errors[@]}"; do
+			printf "  - ${err}${nocolor}\n"
+		done
+	else
+		printf "${green}✅ No error${nocolor}\n"
+	fi
+
+	printf "👋 ${blue}Bye bye${nocolor} 👋\n"
+	printf "\n"
+}
+
+
+
+## -----------------------------------------------------------------------
+
+# Récupération des paramètres en utilisant getopts
+while [[ $# -gt 0 ]]; do
+  case $1 in
+	--smtp-port)
+		shift
+	  	smtp_port=$1
+	  	;;
+	--smtp-ip)
+		shift
+		smtp_ip=$1
+		;;
+	--smtp-name)
+		shift
+		smtp_name=$1
+		;;
+	--username)
+		shift
+		username=$1
+		;;
+	--password)
+		shift
+		password=$1
+		;;
+	--verbose)
+		shift
+		verbose=true
+		;;
+	--silent)
+		shift
+		silent=true
+		;;
+    -h | --help)
+		HowToUse
+		exit 0
+		;;
+	*)
+      	echo "Option invalide: $1"
+      	exit 1
+      	;;
+  esac
+  shift
+done
+
+
+CheckIfParameters
+if [ $? -eq 1 ]; then
+	StartText
+	HowToUse
+	exit 1
+fi
+
+if [[ "$silent" == false ]]; then
+	StartText
+fi
+
+CheckMandatoryParams
+if [ $? -eq 1 ]; then
+	printf "${c__fctAction}Exit${nocolor}\n"
+	exit 1
+fi
+
+
+InstallDependencies
+test_deps=$?
+if [ $test_deps -ne 0 ]; then
+	printf "${c__fctAction}Exit${nocolor}\n"
+	exit 1
+fi
+
+ConfigureHosts
+test_hosts=$?
+if [ $test_hosts -ne 0 ]; then
+	printf "${c__fctAction}Exit${nocolor}\n"
+	exit 1
+fi
+
+CreateConfig
+test_config=$?
+if [ $test_config -ne 0 ]; then
+	printf "${c__fctAction}Exit${nocolor}\n"
+	exit 1
+fi
+
+EndOfScript
