@@ -4,9 +4,46 @@
 
 # Sommaire
 - [Instalation](#instalation)
+	- [Remarques](#remarques)
+	- [Pre-requis](#pre-requis)
+	- [1. Connexion à la nouvelle machine](#1-connexion-à-la-nouvelle-machine)
+	- [2. Configurer une IP statique](#2-configurer-une-ip-statique)
+	- [3. Adapter le hostname](#3-adapter-le-hostname)
+	- [4. Mettre à jour le système](#4-mettre-à-jour-le-système)
+	- [5. Installation de iRedMail](#5-installation-de-iredmail)
+		- [Infos saisies](#infos-saisies)
+		- [Services disponibles](#services-disponibles)
+		- [Répertoire des mail](#répertoire-des-mail)
+		- [Serveur web](#serveur-web)
+		- [Base de données](#base-de-données)
+		- [Domaine de mail](#domaine-de-mail)
+		- [Mot de passe administrateur](#mot-de-passe-administrateur)
+		- [Modules complémentaires](#modules-complémentaires)
+		- [Recap avant installation](#recap-avant-installation)
+		- [Installation (avec tous les modules)](#installation-avec-tous-les-modules)
+		- [Utilisation du firewall de `IredMail`](#utilisation-du-firewall-de-iredmail)
+		- [Récap](#récap)
+	- [6. Redémarrage des services](#6-redémarrage-des-services)
 - [Paramétrage DNS](#paramétrage-dns)
 - [Overview](#overview)
-- [Commandes utiles](#commands)
+	- [Roundcube webmail](#roundcube-webmail)
+	- [SOGo](#sogo)
+	- [netdata](#netdata)
+	- [Web admin panel](#web-admin-panel)
+- [Commandes utiles](#commandes-utiles)
+	- [Postfix](#postfix)
+		- [Afficher la liste des mails en attente d'envoi](#afficher-la-liste-des-mails-en-attente-denvoi)
+		- [Envoyer les messages](#envoyer-les-messages)
+		- [Supprimer les messages](#supprimer-les-messages)
+	- [Debugguer postfix](#debugguer-postfix)
+		- [Script - balayage de la pile d'emails](#script---balayage-de-la-pile-demails)
+	- [Parcourir les logs de Nginx](#parcourir-les-logs-de-nginx)
+	- [Vérifier les ports ouverts](#vérifier-les-ports-ouverts)
+- [Scripts](#scripts)
+	- [init-iredmail](#init-iredmail)
+	- [init-swaks](#init-swaks)
+- [MEMO](#memo)
+
 
 # Instalation
 
@@ -33,7 +70,7 @@ Si distri choisie est un Ubuntu, prendre LTS
   - `mail.homux.me` represente le serveur iRedMail
 
 
-## 1 Connexion a la nouvelle machine
+## 1. Connexion à la nouvelle machine
 se connecter sur la machine en SSH, via root (`webmail` étant le nom associé dans le fichier `hosts` du client ssh)
 ```sh
 ssh root@webmail
@@ -298,17 +335,17 @@ Roundcube est un client mail simple
 
 **Accès** : https://mail.homux.me/mail/
 
-## SOGo groupware
+## SOGo
 SOgo est un client mail complet, contenant calendriers, ...
 
 **Accès** : https://mail.homux.me/SOGo/
 
-## netdata (monitor)
+## netdata
 System de monitoring
 
 **Accès** : https://mail.homux.me/netdata/
 
-## Web admin panel (iRedAdmin)
+## Web admin panel
 Panneau d'administration de `iRedMail`
 
 **Accès** : https://mail.homux.me/iredadmin/
@@ -390,8 +427,35 @@ telnet 10.10.200.231 25
 nmap 10.10.200.231 -p 25
 ```
 
+# Scripts
 
+## init-iredmail
+Permet de préparer le système à l'installation de iRedMail, puis sauvegarde et chiffre le fichier de configuration.
 
+🚩 L'automatisation des écrans n'est pas encore prise en compte
 
-## MEMO
+**usage**
+```sh
+bash iredmail-conf --verbose --silent
+```
+
+## init-swaks
+Permet de configurer un client smtp sur une machine à partir des paramètres fournis
+
+**Usage**
+```sh
+bash swaks-conf --smtp-port "587" --smtp-ip "10.10.200.231" --smtp-name "mail.homux.me" --username "postmaster@homux.me" --password "password"
+```
+
+**Paramètres**
+```sh
+--smtp-port   : SMTP port to use (25 or 587)
+--smtp-ip     : IP of mail server
+--smtp-name   : mail server associated domain name
+--username   : username (email address) used to send messages
+--password   : password used with username
+```
+
+# MEMO
 test@homux.me / AjsFQ5T3X}
+

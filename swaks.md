@@ -3,6 +3,14 @@
 SWAKS pour SWiss Army Knife for SMTP, est un client SMTP, qui permet d'envoyer facilement des mails via des scripts bash.
 Avec lui, pas besoin d'installer postfix et de le configurer en relais SMTP !
 
+# Sommaire
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Utilisation](#utilisation)
+- [Script - swaks-conf](#script---swaks-conf)
+
+
+
 ## Installation
 ```sh
 apt update && apt upgrade && apt install swaks
@@ -44,7 +52,18 @@ swaks -t test@homux.me --body ~/message.txt --h-subject "Message de test"
 ```
 
 ## Script - swaks-conf
-Usage
+Ce script permet de configurer un client smtp sur une machine à partir des paramètres fournis
+
+**Usage**
 ```sh
 bash swaks-conf --smtp-port "587" --smtp-ip "10.10.200.231" --smtp-name "mail.homux.me" --username "postmaster@homux.me" --password "password"
+```
+
+**Paramètres**
+```sh
+--smtp-port   : SMTP port to use (25 or 587)
+--smtp-ip     : IP of mail server
+--smtp-name   : mail server associated domain name
+--username   : username (email address) used to send messages
+--password   : password used with username
 ```

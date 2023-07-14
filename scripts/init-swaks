@@ -42,14 +42,18 @@ commandName=`basename "$commandPath"`
 declare -a g_errors=()
 declare -a g_warnings=()
 declare -a g_notices=()
+verbose=false
+silent=false
 
+###############
+## ARGUMENTS ##
+###############
 smtp_port=""
 smtp_ip=""
 smtp_name=""
 username=""
 password=""
-verbose=false
-silent=false
+
 
 
 ###############

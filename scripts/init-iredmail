@@ -35,12 +35,53 @@ c__notice=$yellow
 c__success=$green
 
 ###############
+## PARAMETERS
+###############
+commandPath=$0
+commandName=`basename "$commandPath"`
+declare -a g_errors=()
+declare -a g_warnings=()
+declare -a g_notices=()
+verbose=false
+silent=false
+
+
+###############
 ## CHECK ROOT
 ###############
-if [ "$EUID" -ne 0 ]; then
-	printf "${c__error}Please run this script as root.${nocolor}\n"
-	exit 1
-fi
+# if [ "$EUID" -ne 0 ]; then
+# 	printf "${c__error}Please run this script as root.${nocolor}\n"
+# 	exit 1
+# fi
+
+########################
+## VALIDATOR FUNCTIONS
+########################
+
+CheckCommands() {
+	local errors=()
+	local status=0
+
+	if ! command -v apt > /dev/null; then
+		# printf "${c__error}apt is not installed${nocolor}\n"
+		errors+=("${c__error}apt is not installed${nocolor}")
+		status=1
+	elif ! command -v wget > /dev/null; then
+		# printf "${c__error}wget is not installed${nocolor}\n"
+		errors+=("${c__error}wget is not installed${nocolor}")
+		status=2
+	else
+		status=0
+	fi
+
+	# check if errors contains errors and show them
+	if [ ${#errors[@]} -gt 0 ]; then
+		for err in "${errors[@]}"; do
+			printf "${c__error}${err}${nocolor}\n"
+		done
+	fi
+	return $status
+}
 
 ###############
 ## FUNCTIONS ##
@@ -76,6 +117,11 @@ StartIRedMailInstall() {
 	printf "${c__fctName}Start the iRedMail installation${nocolor}\n"
 	# Go to the repository
 	cd iRedMail-1.6.3
+	local test=$?
+	if [ $test -ne 0 ]; then
+		printf "${c__error}The repository doesn't exist${nocolor}\n"
+		return 1
+	fi
 	# Start the installation
 	bash iRedMail.sh
 	local test=$?
@@ -89,8 +135,81 @@ StartIRedMailInstall() {
 }
 
 
+######################
+## DISPLAY FUNCTIONS
+######################
+
+StartText () {
+	printf "${blue}$commandName script ${nocolor}\n"
+	printf "\n"
+}
+HowToUse() {
+	printf "❓ ${blue}How to use${gray}\n"
+	printf "\n"
+	printf "${whiitebold}This script is made to automatize iRedMail installation & configuration${nocolor}\n"
+	printf "\n"
+	printf "${commandName} --verbose --silent${nocolor}\n"
+	printf "\n"
+	printf "  --verbose     : show logs\n"
+	printf "  --silent      : hide logs\n"
+	printf "\n"
+	printf "  -h  --help   : show this message\n"
+	printf "${nocolor}\n"
+}
+
+EndOfScript() {
+	printf "\n"
+	printf "${c__fctName}${commandName}${nocolor} - ${c__fct2}Resume${nocolor}\n"
+	# show error messages if there are
+	if [[ ${#g_errors[@]} -gt 0 ]]; then
+		printf "${c__error}❌ ${#g_errors[@]} error(s)${nocolor}\n"
+		for err in "${g_errors[@]}"; do
+			printf "  - ${err}${nocolor}\n"
+		done
+	else
+		printf "${green}✅ No error${nocolor}\n"
+	fi
+
+	printf "👋 ${blue}Bye bye${nocolor} 👋\n"
+	printf "\n"
+}
+
 ## ------------------ ##
 ## ----- SCRIPT ----- ##
+
+# Récupération des paramètres en utilisant getopts
+while [[ $# -gt 0 ]]; do
+  case $1 in
+	--verbose)
+		shift
+		verbose=true
+		;;
+	--silent)
+		shift
+		silent=true
+		;;
+    -h | --help)
+		HowToUse
+		exit 0
+		;;
+	*)
+      	echo "Option invalide: $1"
+      	exit 1
+      	;;
+  esac
+  shift
+done
+
+
+if [[ "$silent" == false ]]; then
+	StartText
+fi
+
+
+CheckCommands
+if [ $? -ne 0 ]; then
+	exit 1
+fi
 
 InstallDependencies
 if [ $? -ne 0 ]; then
