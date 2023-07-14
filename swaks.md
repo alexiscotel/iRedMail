@@ -1,6 +1,6 @@
 # swaks : Envoyez des mails depuis vos scripts sans MTA
 
-SWAKS pour SWiss Army Knife for SMTP, est un client SMTP, qui vous permettra d'envoyer facilement des mails dans vos scripts par exemple.
+SWAKS pour SWiss Army Knife for SMTP, est un client SMTP, qui permet d'envoyer facilement des mails via des scripts bash.
 Avec lui, pas besoin d'installer postfix et de le configurer en relais SMTP !
 
 ## Installation

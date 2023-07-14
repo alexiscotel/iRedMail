@@ -1,6 +1,12 @@
 # iRedMail installation & configuration
 
-🚨 La configuration ci-dessous permet de faire fonctionner `iRedMail` sur le **réseau local** *uniquement*
+🚨 La configuration ci-dessous permet de faire fonctionner `iRedMail` sur le *réseau local* **uniquement**
+
+# Sommaire
+- [Instalation](#instalation)
+- [Paramétrage DNS](#paramétrage-dns)
+- [Overview](#overview)
+- [Commandes utiles](#commands)
 
 # Instalation
 
@@ -27,7 +33,7 @@ Si distri choisie est un Ubuntu, prendre LTS
   - `mail.homux.me` represente le serveur iRedMail
 
 
-## 1. Connexion à la nouvelle machine
+## 1 Connexion a la nouvelle machine
 se connecter sur la machine en SSH, via root (`webmail` étant le nom associé dans le fichier `hosts` du client ssh)
 ```sh
 ssh root@webmail
@@ -266,12 +272,11 @@ enfin, on reboot
 reboot
 ```
 
-## 7. Paramétrage DNS
-### Paramétrer le DNS
+# Paramétrage DNS
 - Supprimer les comptes POP et SMTP déjà présents.
 - Supprimer tous les registres mx, pop ou smtp
-- 
-### Zone DNS
+
+**Zone DNS**
 
 - Champ `MX` a créer dans le gestionnaire de nom de domaine :
 	```
@@ -287,7 +292,7 @@ reboot
 
 
 
-# Configuration
+# Overview
 ## Roundcube webmail
 Roundcube est un client mail simple
 
